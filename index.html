@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Esplanade Metro Attendance</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; display: flex; flex-direction: column; align-items: center; padding: 50px; background-color: #f4f7f6; }
+        .card { background: white; border: none; padding: 30px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); text-align: center; max-width: 400px; }
+        button { background-color: #28a745; color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-size: 18px; transition: 0.3s; }
+        button:hover { background-color: #218838; }
+        button:disabled { background-color: #ccc; cursor: not-allowed; }
+        #status { margin-top: 20px; font-weight: bold; font-size: 1.1em; }
+        .details { font-size: 12px; color: #777; margin-top: 15px; line-height: 1.6; }
+    </style>
+</head>
+<body>
+
+    <div class="card">
+        <h2>Metro Attendance</h2>
+        <p>Target: <b>Esplanade Metro Station</b></p>
+        <button id="clockInBtn">Mark Attendance</button>
+        <p id="status"></p>
+        <div class="details" id="details"></div>
+    </div>
+
+    <script>
+        // TARGET COORDINATES: Esplanade Metro
+        const targetLat = 22.5649;
+        const targetLon = 88.3517;
+        const radiusInMeters = 100; // Allowed distance (Geofence)
+
+        const btn = document.getElementById('clockInBtn');
+        const status = document.getElementById('status');
+        const details = document.getElementById('details');
+
+        btn.addEventListener('click', () => {
+            if (!navigator.geolocation) {
+                status.innerText = "Geolocation not supported.";
+                return;
+            }
+
+            status.innerText = "Verifying location...";
+            status.style.color = "black";
+            btn.disabled = true;
+
+            navigator.geolocation.getCurrentPosition(checkLocation, handleError, {
+                enableHighAccuracy: true
+            });
+        });
+
+        function checkLocation(position) {
+            const userLat = position.coords.latitude;
+            const userLon = position.coords.longitude;
+
+            // Distance calculation using Haversine Formula
+            const distance = calculateDistance(userLat, userLon, targetLat, targetLon);
+            
+            details.innerHTML = `Your Location: ${userLat.toFixed(4)}, ${userLon.toFixed(4)}<br>Distance from Station: ${Math.round(distance)} meters`;
+
+            if (distance <= radiusInMeters) {
+                status.innerText = "✅ Attendance Marked Successfully!";
+                status.style.color = "green";
+            } else {
+                status.innerText = "❌ Failed: You are outside the station area.";
+                status.style.color = "red";
+                btn.disabled = false;
+            }
+        }
+
+        // Haversine Formula to calculate distance in meters
+        function calculateDistance(lat1, lon1, lat2, lon2) {
+            const R = 6371e3; // Earth radius in meters
+            const φ1 = lat1 * Math.PI/180;
+            const φ2 = lat2 * Math.PI/180;
+            const Δφ = (lat2-lat1) * Math.PI/180;
+            const Δλ = (lon2-lon1) * Math.PI/180;
+
+            const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
+                      Math.cos(φ1) * Math.cos(φ2) *
+                      Math.sin(Δλ/2) * Math.sin(Δλ/2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+
+            return R * c; 
+        }
+
+        function handleError(err) {
+            btn.disabled = false;
+            status.innerText = "Error: " + err.message;
+            status.style.color = "red";
+        }
+    </script>
+</body>
+</html>
+
